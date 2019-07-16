@@ -72,8 +72,11 @@ inline std::map<std::string, std::string> String2Map(std::string const &s) {
     std::istringstream iss(s);
     std::map<std::string, std::string> m;
 
-    while (std::getline(std::getline(iss, key, '=') >> std::ws, val)) {
-        m[key] = val;
+    while (std::getline(iss, key, ',')) {
+        std::istringstream isskey(key);
+        while (std::getline(std::getline(isskey, key, '=') >> std::ws, val)) {
+            m[key] = val;
+        }
     }
 
     return m;
