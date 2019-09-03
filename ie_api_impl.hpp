@@ -166,6 +166,24 @@ struct IEPlugin {
     InferenceEngine::InferenceEnginePluginPtr actual;
 };
 
+struct IECore {
+    InferenceEngine::Core actual;
+    explicit IECore(const std::string & xmlConfigFile = std::string());
+    std::map<std::string, InferenceEngine::Version> getVersions(const std::string & deviceName);
+    std::unique_ptr<InferenceEnginePython::IEExecNetwork> loadNetwork(IENetwork network, const std::string & deviceName,
+            const std::map<std::string, std::string> & config, int num_requests);
+    std::map<std::string, std::string> queryNetwork(IENetwork network, const std::string & deviceName,
+                                       const std::map<std::string, std::string> & config);
+    void setConfig(const std::map<std::string, std::string> &config, const std::string & deviceName = std::string());
+    void registerPlugin(const std::string & pluginName, const std::string & deviceName);
+    void unregisterPlugin(const std::string & deviceName);
+    void registerPlugins(const std::string & xmlConfigFile);
+    void addExtension(const std::string & ext_lib_path, const std::string & deviceName);
+    std::vector<std::string> getAvailableDevices();
+    // PyObject* getMetric(const std::string & deviceName, const std::string & name);
+    // PyObject* getConfig(const std::string & deviceName, const std::string & name);
+};
+
 template<class T>
 T *get_buffer(InferenceEngine::Blob &blob) {
     return blob.buffer().as<T *>();

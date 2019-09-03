@@ -22,6 +22,8 @@
 #include "ie_c_api.h"
 #include "test.h"
 
+const char *CONFIGS = "CPU_THREADS_NUM=4|CPU_THROUGHPUT_STREAMS=4|CPU_BIND_THREAD=NO";
+
 bool ParseAndCheckCommandLine(int argc, char *argv[]) {
 // ---------------------------Parsing and validation of input args--------------------------------------
     gflags::ParseCommandLineNonHelpFlags(&argc, &argv, true);
@@ -90,18 +92,21 @@ int main(int argc, char *argv[])
     std::cout << "Batch size is " << std::to_string(batch_size) << std::endl;
 
 // --------------------------- 3. Load Plugin for inference engine -------------------------------------
-    std::cout << "Loading Plugin" << std::endl;
+    std::cout << "Loading Core" << std::endl;
     const char *device = FLAGS_d.data();
-    const char *path = "";
+    if (device == nullptr)
+        device = "CPU";
 
-    ie_plugin_t *plugin = ie_plugin_create(device);
-    ie_plugin_add_cpu_extension(plugin, path);
+    ie_core_t *core = ie_core_create();
+    ie_core_set_config(core, CONFIGS, device);
+    ie_core_add_extension(core, NULL, device);
+
 // --------------------------- 4. Read IR (.xml and .bin files) and Loading model to the plugin ------------
     const char *model = FLAGS_m.data();
     const char *weight = nullptr;
     std::cout << "Loading Network" << std::endl;
 
-    ie_network_t *ie_network = ie_network_create(plugin, model, weight);
+    ie_network_t *ie_network = ie_network_create(core, model, weight);
 // --------------------------- 5. Prepare input blobs --------------------------------------------------
     std::cout << "Preparing input blobs" << std::endl;
 
@@ -133,7 +138,7 @@ int main(int argc, char *argv[])
     ie_output_info_set_precision(&output_info, outputPrecision);
 // --------------------------- 7. Create infer request -------------------------------------------------
     int num_requests = FLAGS_nireq;
-    infer_requests_t *infer = ie_network_create_infer_requests(ie_network, num_requests);
+    infer_requests_t *infer = ie_network_create_infer_requests(ie_network, num_requests, device);
     std::queue<infer_request_t *> available_infer, pending_infer;
     for (int i = 0; i < num_requests; i++) {
         available_infer.push(infer->requests[i]);
@@ -207,5 +212,7 @@ int main(int argc, char *argv[])
     ms total = std::chrono::duration_cast<ms>(total_t1 - total_t0);
     std::cout << "Total Inference time: " << total.count() << std::endl;
 
+    ie_network_destroy(ie_network);
+    ie_core_destroy(core);
     return 0;
 }

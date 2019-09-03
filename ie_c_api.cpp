@@ -38,7 +38,7 @@ struct ie_network {
     const char *name;
     size_t batch_size;
     void *object;
-    ie_plugin_t *plugin;
+    ie_core_t *core;
     infer_requests_t *infer_requests;
     std::unique_ptr<IEPY::IEExecNetwork> ie_exec_network;
     std::map<std::string, IEPY::InputInfo> inputs;
@@ -49,6 +49,11 @@ struct ie_plugin {
     void *object;
     const char *device_name;
     const char *version;
+    std::map<std::string, std::string> config;
+};
+
+struct ie_core {
+    void *object;
     std::map<std::string, std::string> config;
 };
 
@@ -66,17 +71,15 @@ inline std::string fileNameNoExt(const std::string &filepath) {
     return filepath.substr(0, pos);
 }
 
-/* config string format: "A=1\nB=2\nC=3\n" */
+/* config string format: "A=1|B=2|C=3" */
 inline std::map<std::string, std::string> String2Map(std::string const &s) {
     std::string key, val;
     std::istringstream iss(s);
     std::map<std::string, std::string> m;
 
-    while (std::getline(iss, key, ',')) {
-        std::istringstream isskey(key);
-        while (std::getline(std::getline(isskey, key, '=') >> std::ws, val)) {
-            m[key] = val;
-        }
+    while (std::getline(std::getline(iss, key, '=') >> std::ws, val, '|')) {
+        m[key] = val;
+        std::cout << key << ":" << val << std::endl;
     }
 
     return m;
@@ -228,10 +231,10 @@ void infer_request_put_blob(ie_blob_t *blob) {
     delete blob;
 }
 
-ie_network_t *ie_network_create(ie_plugin_t *plugin, const char *model, const char *weights) {
+ie_network_t *ie_network_create(ie_core_t *core, const char *model, const char *weights) {
     ie_network_t *network = new ie_network_t;
 
-    assert(plugin && model && network);
+    assert(core && model && network);
     std::string weights_file;
     if (weights == nullptr)
         weights_file = fileNameNoExt(model) + ".bin";
@@ -246,7 +249,7 @@ ie_network_t *ie_network_create(ie_plugin_t *plugin, const char *model, const ch
     }
 
     network->name = ie_network_ptr->name.c_str();
-    network->plugin = plugin;
+    network->core = core;
     network->object = ie_network_ptr;
     network->inputs = ie_network_ptr->getInputs();
     network->outputs = ie_network_ptr->getOutputs();
@@ -369,13 +372,13 @@ void ie_network_get_all_outputs(ie_network_t *network, ie_input_info_t **const o
     }
 }
 
-infer_requests_t *ie_network_create_infer_requests(ie_network_t *network, int num_requests) {
-    assert(network && network->plugin && num_requests > 0);
+infer_requests_t *ie_network_create_infer_requests(ie_network_t *network, int num_requests, const char *device) {
+    assert(network && num_requests >= 0 && device);
 
-    IEPY::IEPlugin *plugin = reinterpret_cast<IEPY::IEPlugin *>(network->plugin->object);
+    IEPY::IECore *core = reinterpret_cast<IEPY::IECore *>(network->core->object);
     try {
-        network->ie_exec_network =
-            plugin->load(*reinterpret_cast<IEPY::IENetwork *>(network->object), num_requests, network->plugin->config);
+        network->ie_exec_network = core->loadNetwork(*reinterpret_cast<IEPY::IENetwork *>(network->object), device,
+                                                     network->core->config, num_requests);
     } catch (const std::exception &e) {
         std::throw_with_nested(std::runtime_error("Failed to load network!"));
     }
@@ -467,6 +470,79 @@ void ie_plugin_add_cpu_extension(ie_plugin_t *plugin, const char *ext_path) {
                                           &response);
     } else {
         plugin_impl->addCpuExtension(ext_path);
+    }
+}
+
+ie_core_t *ie_core_create() {
+    ie_core_t *core = new ie_core_t;
+
+    assert(core);
+
+    IEPY::IECore *ie_core_ptr = nullptr;
+    try {
+        ie_core_ptr = new IEPY::IECore();
+    } catch (const std::exception &e) {
+        std::throw_with_nested(std::runtime_error("Can not create core."));
+    }
+    core->object = ie_core_ptr;
+
+    // list all available devices
+    std::cout << "Avail devices: ";
+    for (auto device : ie_core_ptr->getAvailableDevices())
+        std::cout << device << " ";
+    std::cout << std::endl;
+
+    return core;
+}
+
+void ie_core_destroy(ie_core_t *core) {
+    if (core == nullptr)
+        return;
+
+    if (core->object)
+        delete reinterpret_cast<IEPY::IECore *>(core->object);
+
+    delete core;
+}
+
+void ie_core_set_config(ie_core_t *core, const char *ie_configs, const char *device) {
+    if (core == nullptr || ie_configs == nullptr)
+        return;
+
+    IEPY::IECore *core_impl = reinterpret_cast<IEPY::IECore *>(core->object);
+    core->config = String2Map(ie_configs);
+    // TODO: Inference Engine asserts if unknown key passed
+    std::map<std::string, std::string> ie_config(core->config);
+    ie_config.erase("RESIZE_BY_INFERENCE");
+    ie_config.erase("CPU_EXTENSION");
+    if (device)
+        core_impl->setConfig(ie_config, device);
+    else
+        core_impl->setConfig(ie_config);
+};
+
+const char *ie_core_get_config(ie_core_t *core, const char *config_key) {
+    if (core == nullptr || config_key == nullptr)
+        return nullptr;
+
+    auto it = core->config.find(config_key);
+    if (it != core->config.end())
+        return it->second.c_str();
+
+    return nullptr;
+}
+
+void ie_core_add_extension(ie_core_t *core, const char *ext_path, const char *device) {
+    if (core == nullptr)
+        return;
+
+    assert(device);
+
+    IEPY::IECore *core_impl = reinterpret_cast<IEPY::IECore *>(core->object);
+    if (ext_path == nullptr) {
+        core_impl->addExtension(std::string(), device);
+    } else {
+        core_impl->addExtension(ext_path, device);
     }
 }
 

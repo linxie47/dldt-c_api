@@ -46,6 +46,29 @@ std::map<std::string, InferenceEngine::Layout> layout_map = {{"ANY",     Inferen
     }                                               \
 }                                                   \
 
+uint32_t getOptimalNumberOfRequests(const InferenceEngine::IExecutableNetwork::Ptr actual) {
+    try {
+        InferenceEngine::ResponseDesc response;
+        InferenceEngine::Parameter parameter_value;
+        IE_CHECK_CALL(actual->GetMetric(METRIC_KEY(SUPPORTED_METRICS), parameter_value, &response));
+        auto supported_metrics = parameter_value.as<std::vector<std::string>>();
+        std::string key = METRIC_KEY(OPTIMAL_NUMBER_OF_INFER_REQUESTS);
+        if (std::find(supported_metrics.begin(), supported_metrics.end(), key) != supported_metrics.end()) {
+            IE_CHECK_CALL(actual->GetMetric(key, parameter_value, &response));
+            if (parameter_value.is<unsigned int>())
+                return parameter_value.as<unsigned int>();
+            else
+                THROW_IE_EXCEPTION << "Unsupported format for " << key << "!"
+                                  << " Please specify number of infer requests directly!";
+        } else {
+            THROW_IE_EXCEPTION << "Can't load network: " << key << " is not supported!"
+                               << " Please specify number of infer requests directly!";
+        }
+    } catch (const std::exception& ex) {
+        THROW_IE_EXCEPTION << "Can't load network: " << ex.what()
+                           << " Please specify number of infer requests directly!";
+    }
+}
 
 InferenceEnginePython::IENetwork::IENetwork(const std::string &model, const std::string &weights) {
     InferenceEngine::CNNNetReader net_reader;
@@ -414,3 +437,78 @@ std::string InferenceEnginePython::get_version() {
     version_str += version->buildNumber;
     return version_str;
 }
+
+InferenceEnginePython::IECore::IECore(const std::string & xmlConfigFile) {
+    actual = InferenceEngine::Core(xmlConfigFile);
+}
+
+std::map<std::string, InferenceEngine::Version> InferenceEnginePython::IECore::getVersions(const std::string &deviceName) {
+    return actual.GetVersions(deviceName);
+}
+
+std::unique_ptr<InferenceEnginePython::IEExecNetwork> InferenceEnginePython::IECore::loadNetwork(IENetwork network,
+        const std::string & deviceName, const std::map<std::string, std::string> & config, int num_requests){
+
+    InferenceEngine::ResponseDesc response;
+    auto exec_network = InferenceEnginePython::make_unique<InferenceEnginePython::IEExecNetwork>(network.name,
+                                                                                                 num_requests);
+    exec_network->actual = actual.LoadNetwork(network.actual, deviceName, config);
+
+    if (0 == num_requests) {
+        num_requests = getOptimalNumberOfRequests(exec_network->actual);
+        exec_network->infer_requests.resize(num_requests);
+    }
+
+    for (size_t i = 0; i < num_requests; ++i) {
+        InferRequestWrap &infer_request = exec_network->infer_requests[i];
+        IE_CHECK_CALL(exec_network->actual->CreateInferRequest(infer_request.request_ptr, &response))
+    }
+
+    return exec_network;
+}
+
+std::map<std::string, std::string> InferenceEnginePython::IECore::queryNetwork(InferenceEnginePython::IENetwork network,
+                                                                  const std::string &deviceName,
+                                                                  const std::map<std::string, std::string> &config) {
+    auto res = actual.QueryNetwork(network.actual, deviceName, config);
+    return res.supportedLayersMap;
+}
+
+void InferenceEnginePython::IECore::setConfig(const std::map<std::string, std::string> &config,
+                                              const std::string &deviceName) {
+    actual.SetConfig(config, deviceName);
+}
+
+void InferenceEnginePython::IECore::registerPlugin(const std::string & pluginName, const std::string &deviceName) {
+    actual.RegisterPlugin(pluginName, deviceName);
+}
+
+void InferenceEnginePython::IECore::unregisterPlugin(const std::string & deviceName){
+    actual.UnregisterPlugin(deviceName);
+}
+
+void InferenceEnginePython::IECore::registerPlugins(const std::string & xmlConfigFile){
+    actual.RegisterPlugins(xmlConfigFile);
+}
+
+void InferenceEnginePython::IECore::addExtension(const std::string & ext_lib_path, const std::string &deviceName) {
+    auto extension_ptr = InferenceEngine::make_so_pointer<InferenceEngine::IExtension>(ext_lib_path);
+    auto extension = std::dynamic_pointer_cast<InferenceEngine::IExtension>(extension_ptr);
+    actual.AddExtension(extension, deviceName);
+}
+
+std::vector<std::string> InferenceEnginePython::IECore::getAvailableDevices() {
+    return actual.GetAvailableDevices();
+}
+
+/*
+PyObject* InferenceEnginePython::IECore::getMetric(const std::string &deviceName, const std::string &name) {
+    InferenceEngine::Parameter param = actual.GetMetric(deviceName, name);
+    return parse_parameter(param);
+}
+
+PyObject* InferenceEnginePython::IECore::getConfig(const std::string &deviceName, const std::string &name) {
+    InferenceEngine::Parameter param = actual.GetConfig(deviceName, name);
+    return parse_parameter(param);
+}
+*/

@@ -52,6 +52,7 @@ typedef struct ie_plugin ie_plugin_t;
 typedef struct ie_blob ie_blob_t;
 typedef struct ie_blobs ie_blobs_t;
 typedef struct dimensions dimensions_t;
+typedef struct ie_core ie_core_t;
 
 /// GET IE C API VERSION ///
 const char *ie_c_api_version(void);
@@ -103,7 +104,7 @@ ie_blob_t *infer_request_get_blob(infer_request_t *infer_request, const char *na
 void infer_request_put_blob(ie_blob_t *blob);
 
 //// IE NETWORK ////
-ie_network_t *ie_network_create(ie_plugin_t *plugin, const char *model, const char *weights);
+ie_network_t *ie_network_create(ie_core_t *core, const char *model, const char *weights);
 void ie_network_destroy(ie_network_t *network);
 void ie_network_set_batch(ie_network_t *network, const size_t size);
 size_t ie_network_get_batch_size(ie_network_t *network);
@@ -119,15 +120,21 @@ void ie_network_get_all_outputs(ie_network_t *network, ie_input_info_t **const o
  * \brief Creat infer requests and return requests array
  * @return: (infer_requests *) - no memory allocation required for this value
  */
-infer_requests_t *ie_network_create_infer_requests(ie_network_t *network, int num_requests);
+infer_requests_t *ie_network_create_infer_requests(ie_network_t *network, int num_requests, const char *device);
 
 //// IE PLUGIN ////
 ie_plugin_t *ie_plugin_create(const char *device);
 void ie_plugin_destroy(ie_plugin_t *plugin);
-/* config string format: "A=1\nB=2\nC=3\n" */
 void ie_plugin_set_config(ie_plugin_t *plugin, const char *configs);
 const char *ie_plugin_get_config(ie_plugin_t *plugin, const char *config_key);
 void ie_plugin_add_cpu_extension(ie_plugin_t *plugin, const char *ext_path);
+
+//// IE CORE ////
+ie_core_t *ie_core_create(void);
+void ie_core_destroy(ie_core_t *core);
+void ie_core_set_config(ie_core_t *core, const char *configs, const char *device);
+const char *ie_core_get_config(ie_core_t *core, const char *config_key);
+void ie_core_add_extension(ie_core_t *core, const char *ext_path, const char *device);
 
 #ifdef __cplusplus
 }
