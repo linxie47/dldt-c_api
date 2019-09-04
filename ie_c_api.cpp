@@ -377,10 +377,26 @@ infer_requests_t *ie_network_create_infer_requests(ie_network_t *network, int nu
 
     IEPY::IECore *core = reinterpret_cast<IEPY::IECore *>(network->core->object);
     try {
-        network->ie_exec_network = core->loadNetwork(*reinterpret_cast<IEPY::IENetwork *>(network->object), device,
+        std::string device_ = device;
+        if (device_.find("MULTI") == 0) {
+            auto it = (network->core->config).find("MULTI_DEVICE_PRIORITIES");
+            if (it != network->core->config.end())
+                device_ = device_ + ":" + it->second;
+            else
+                std::logic_error("missing multi device configure");
+        }
+        if (device_.find("HETERO") == 0) {
+            auto it = (network->core->config).find("TARGET_FALLBACK");
+            if (it != network->core->config.end())
+                device_ = device_ + ":" + it->second;
+            else
+                std::logic_error("missing hetero device configure");
+        }
+        std::cout << "device = " << device_ << std::endl;
+        network->ie_exec_network = core->loadNetwork(*reinterpret_cast<IEPY::IENetwork *>(network->object), device_,
                                                      network->core->config, num_requests);
     } catch (const std::exception &e) {
-        std::throw_with_nested(std::runtime_error("Failed to load network!"));
+        std::throw_with_nested(std::runtime_error(e.what()));
     }
 
     infer_requests_t *requests = (decltype(requests))malloc(sizeof(*requests));
@@ -515,6 +531,8 @@ void ie_core_set_config(ie_core_t *core, const char *ie_configs, const char *dev
     std::map<std::string, std::string> ie_config(core->config);
     ie_config.erase("RESIZE_BY_INFERENCE");
     ie_config.erase("CPU_EXTENSION");
+    ie_config.erase("TARGET_FALLBACK");
+    ie_config.erase("MULTI_DEVICE_PRIORITIES");
     if (device)
         core_impl->setConfig(ie_config, device);
     else
