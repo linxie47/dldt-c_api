@@ -35,6 +35,9 @@ typedef std::chrono::high_resolution_clock Time;
 typedef std::chrono::nanoseconds ns;
 
 namespace InferenceEnginePython {
+
+struct IENetwork;
+
 struct IENetLayer {
     InferenceEngine::CNNLayerPtr layer_ptr;
     InferenceEngine::CNNNetwork network_ptr;
@@ -62,6 +65,9 @@ struct InputInfo {
     std::vector<size_t> dims;
     std::string precision;
     std::string layout;
+
+    void setResizeParam(InferenceEnginePython::IENetwork *network, InferenceEngine::ResizeAlgorithm alg,
+                        InferenceEngine::ColorFormat fmt);
 
     void setPrecision(std::string precision);
 

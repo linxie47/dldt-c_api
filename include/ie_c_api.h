@@ -42,6 +42,17 @@ typedef enum {
     IE_STATUS_NETWORK_NOT_READ = -12
 } IEStatusCode;
 
+typedef enum {
+    RAW = 0u, ///< Plain blob (default), no extra color processing required
+    RGB,      ///< RGB color format
+    BGR,      ///< BGR color format, default in DLDT
+    RGBX,     ///< RGBX color format with X ignored during inference
+    BGRX,     ///< BGRX color format with X ignored during inference
+    NV12,     ///< NV12 color format represented as compound Y+UV blob
+} IEColorFormat;
+
+typedef enum { NO_RESIZE = 0, RESIZE_BILINEAR, RESIZE_AREA } IEResizeAlg;
+
 typedef struct ie_info ie_input_info_t;
 typedef struct ie_info ie_output_info_t;
 typedef struct ie_network ie_network_t;
@@ -53,6 +64,7 @@ typedef struct ie_blob ie_blob_t;
 typedef struct ie_blobs ie_blobs_t;
 typedef struct dimensions dimensions_t;
 typedef struct ie_core ie_core_t;
+typedef struct roi roi_t;
 
 /// GET IE C API VERSION ///
 const char *ie_c_api_version(void);
@@ -74,12 +86,22 @@ const char *ie_info_get_name(const void *info);
 const dimensions_t *ie_info_get_dimensions(const void *info);
 void ie_input_info_set_precision(ie_input_info_t *info, const char *precision);
 void ie_input_info_set_layout(ie_input_info_t *info, const char *layout);
+void ie_input_info_set_preprocess(ie_input_info_t *info, ie_network_t *network, IEResizeAlg alg, IEColorFormat fmt);
 void ie_output_info_set_precision(ie_output_info_t *info, const char *precision);
 
 //// IE NET LAYER ////
 struct ie_net_layer {};
 
 //// IE BLOB ////
+
+struct roi {
+    size_t id;
+    size_t posX;
+    size_t posY;
+    size_t sizeX;
+    size_t sizeY;
+};
+
 struct ie_blobs {
     ie_blob_t **blobs;
     size_t num_blobs;
@@ -102,6 +124,8 @@ void *infer_request_get_blob_data(infer_request_t *infer_request, const char *na
 void infer_request_get_blob_dims(infer_request_t *infer_request, const char *name, dimensions_t *dims);
 ie_blob_t *infer_request_get_blob(infer_request_t *infer_request, const char *name);
 void infer_request_put_blob(ie_blob_t *blob);
+int infer_request_set_blob(infer_request_t *infer_request, const char *name, size_t width, size_t height,
+                           IEColorFormat format, uint8_t *data[], const roi_t *roi);
 
 //// IE NETWORK ////
 ie_network_t *ie_network_create(ie_core_t *core, const char *model, const char *weights);

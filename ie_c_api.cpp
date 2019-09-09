@@ -17,6 +17,7 @@
 #include <assert.h>
 
 #include <ext_list.hpp>
+#include <ie_compound_blob.h>
 
 namespace IEPY = InferenceEnginePython;
 namespace IE = InferenceEngine;
@@ -85,6 +86,19 @@ inline std::map<std::string, std::string> String2Map(std::string const &s) {
     return m;
 }
 
+inline size_t GetNumberChannels(IEColorFormat format) {
+    switch (format) {
+    case IEColorFormat::BGRX:
+    case IEColorFormat::RGBX:
+        return 4;
+    case IEColorFormat::BGR:
+    case IEColorFormat::RGB:
+        return 3;
+    default:
+        return 0;
+    }
+}
+
 const char *ie_c_api_version(void) {
     std::ostringstream ostr;
     ostr << IE_C_API_VERSION_MAJOR << "." << IE_C_API_VERSION_MINOR << "." << IE_C_API_VERSION_PATCH << std::ends;
@@ -128,6 +142,15 @@ void ie_output_info_set_precision(ie_output_info_t *info, const char *precision)
     info_impl->setPrecision(precision);
 }
 
+void ie_input_info_set_preprocess(ie_input_info_t *info, ie_network_t *network, IEResizeAlg alg, IEColorFormat fmt) {
+    if (info == nullptr || network == nullptr)
+        return;
+
+    IEPY::InputInfo *info_impl = reinterpret_cast<IEPY::InputInfo *>(info->object);
+    IEPY::IENetwork *network_impl = reinterpret_cast<IEPY::IENetwork *>(network->object);
+    info_impl->setResizeParam(network_impl, static_cast<IE::ResizeAlgorithm>(alg), static_cast<IE::ColorFormat>(fmt));
+}
+
 const void *ie_blob_get_data(ie_blob_t *blob) {
     return blob->object->buffer();
 }
@@ -166,6 +189,54 @@ int infer_request_wait(infer_request_t *infer_request, int64_t timeout) {
 
     IEPY::InferRequestWrap *infer_wrap = reinterpret_cast<IEPY::InferRequestWrap *>(infer_request->object);
     return infer_wrap->wait(timeout);
+}
+
+int infer_request_set_blob(infer_request_t *infer_request, const char *name, size_t width, size_t height,
+                           IEColorFormat format, uint8_t *data[], const roi_t *roi) {
+    if (infer_request == nullptr || name == nullptr)
+        return -1;
+
+    IE::Blob::Ptr image_blob = nullptr;
+    if (format != IEColorFormat::NV12) {
+        size_t channels = GetNumberChannels(format);
+
+        IE::TensorDesc tensor_desc(IE::Precision::U8, {1, channels, height, width},
+                                   IE::Layout::NHWC);
+        image_blob = IE::make_shared_blob<uint8_t>(tensor_desc, data[0]);
+
+        if (roi) {
+            IE::ROI crop_roi({0, roi->posX, roi->posY, roi->sizeX, roi->sizeY});
+            image_blob = IE::make_shared_blob(image_blob, crop_roi);
+        }
+    } else { // IEColorFormat::NV12
+        IE::TensorDesc y_desc(IE::Precision::U8, {1, 1, height - height % 2, width - width % 2},
+                              IE::Layout::NHWC);
+        IE::TensorDesc uv_desc(IE::Precision::U8, {1, 2, height / 2, width / 2}, IE::Layout::NHWC);
+
+        // Create blob for Y plane from raw data
+        IE::Blob::Ptr y_blob = IE::make_shared_blob<uint8_t>(y_desc, data[0]);
+        // Create blob for UV plane from raw data
+        IE::Blob::Ptr uv_blob = IE::make_shared_blob<uint8_t>(uv_desc, data[1]);
+        // Create NV12Blob from Y and UV blobs
+        image_blob = IE::make_shared_blob<IE::NV12Blob>(y_blob, uv_blob);
+    }
+
+    InferenceEngine::ResponseDesc response;
+    IEPY::InferRequestWrap *infer_wrap = reinterpret_cast<IEPY::InferRequestWrap *>(infer_request->object);
+    IE::StatusCode status = infer_wrap->request_ptr->SetBlob(name, image_blob, &response);
+    if (status != 0) {
+        std::cout << response.msg << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
+void *infer_request_get_object(infer_request_t *infer_request) {
+    if (infer_request == nullptr)
+        return nullptr;
+
+    return infer_request->object;
 }
 
 void *infer_request_get_blob_data(infer_request_t *infer_request, const char *name) {

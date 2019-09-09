@@ -233,6 +233,18 @@ InferenceEnginePython::IENetwork::setStats(
     pstats->setNodesStats(newNetNodesStats);
 }
 
+void InferenceEnginePython::InputInfo::setResizeParam(InferenceEnginePython::IENetwork *network,
+                                                      InferenceEngine::ResizeAlgorithm alg,
+                                                      InferenceEngine::ColorFormat format) {
+    const InferenceEngine::InputsDataMap &inputsInfo = network->actual.getInputsInfo();
+    if (inputsInfo.begin()->first != actual.name()) {
+        THROW_IE_EXCEPTION << "Suppport only one input:" << actual.name();
+    }
+    InferenceEngine::InputInfo::Ptr input_info = inputsInfo.begin()->second;
+    input_info->getPreProcess().setResizeAlgorithm(alg);
+    input_info->getPreProcess().setColorFormat(format);
+}
+
 void InferenceEnginePython::InputInfo::setPrecision(std::string precision) {
     actual.setPrecision(precision_map[precision]);
 }
