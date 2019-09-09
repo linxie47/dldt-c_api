@@ -30,6 +30,8 @@ DEFINE_string(d, "CPU", "Device for inference, 'CPU' or 'GPU'");
 
 DEFINE_int32(nireq, 1, "Inference request number");
 
+DEFINE_int32(b, 1, "Batch size");
+
 //DEFINE_int32(queue, 0, "Inference queue size");
 
 //DEFINE_double(thresh, .4, "Confidence threshold for bounding boxes 0-1");

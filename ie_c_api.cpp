@@ -399,6 +399,16 @@ static inline void ConvertToOutputInfo(std::map<std::string, IEPY::OutputInfo>::
     info->object = output_info;
 }
 
+static inline void InputInfoToTensor(std::map<std::string, std::vector<size_t>> &input_shapes, ie_info *info, int batch_size) {
+    std::vector<size_t> input_shape(4);
+    std::string input_name = info->name;
+
+    input_shape[0] = batch_size;
+    for (size_t i = 1; i < info->dim.ranks; i++)
+        input_shape[i] = info->dim.dims[i];
+    input_shapes[input_name] = input_shape;
+}
+
 void ie_network_get_input(ie_network_t *network, ie_input_info_t *info, const char *input_layer_name) {
     if (network == nullptr || info == nullptr)
         return;
@@ -441,6 +451,17 @@ void ie_network_get_all_outputs(ie_network_t *network, ie_input_info_t **const o
         ConvertToOutputInfo(it, outputs_ptr[index]);
         index++;
     }
+}
+
+void ie_network_input_reshape(ie_network_t *network, ie_input_info_t *info, int batch_size) {
+    if (network == nullptr || info == nullptr)
+        return;
+
+    IEPY::IENetwork *network_impl = reinterpret_cast<IEPY::IENetwork *>(network->object);
+    std::map<std::string, std::vector<size_t>> input_shapes;
+    InputInfoToTensor(input_shapes, info, batch_size);
+
+    network_impl->reshape(input_shapes);
 }
 
 infer_requests_t *ie_network_create_infer_requests(ie_network_t *network, int num_requests, const char *device) {

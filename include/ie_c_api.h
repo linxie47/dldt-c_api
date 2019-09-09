@@ -140,6 +140,7 @@ void ie_network_get_input(ie_network_t *network, ie_input_info_t *info, const ch
 void ie_network_get_output(ie_network_t *network, ie_output_info_t *info, const char *output_layer_name);
 void ie_network_get_all_inputs(ie_network_t *network, ie_input_info_t **const inputs_ptr);
 void ie_network_get_all_outputs(ie_network_t *network, ie_input_info_t **const outputs_ptr);
+void ie_network_input_reshape(ie_network_t *network, ie_input_info_t *info, int batch_size);
 /*
  * \brief Creat infer requests and return requests array
  * @return: (infer_requests *) - no memory allocation required for this value

@@ -42,7 +42,7 @@ bool ParseAndCheckCommandLine(int argc, char *argv[]) {
 }
 
 void frameToBlob(const cv::Mat& frame, infer_request_t *infer_request,
-                 const char *inputName)
+                 const char *inputName, int batch_id)
 {
     dimensions_t dimenison;
     infer_request_get_blob_dims(infer_request, inputName, &dimenison);
@@ -54,10 +54,12 @@ void frameToBlob(const cv::Mat& frame, infer_request_t *infer_request,
     cv::Mat resized_image;
     cv::resize(frame, resized_image, cv::Size(300, 300));
 
+    int batchoffset = batch_id * channels * width * height;
+
     for (size_t c = 0; c < channels; c++) {
         for (size_t  h = 0; h < height; h++) {
             for (size_t w = 0; w < width; w++) {
-                blob_data[c * width * height + h * width + w] =
+                blob_data[c * width * height + h * width + w + batchoffset] =
                         resized_image.at<cv::Vec3b>(h, w)[c];
             }
         }
@@ -88,7 +90,7 @@ int main(int argc, char *argv[])
                                "Failed getting next frame from the " + FLAGS_i);
     }
 
-    int batch_size = 1;
+    int batch_size = FLAGS_b;
     std::cout << "Batch size is " << std::to_string(batch_size) << std::endl;
 
 // --------------------------- 3. Load Plugin for inference engine -------------------------------------
@@ -115,7 +117,7 @@ int main(int argc, char *argv[])
     ie_input_info_t input_info;
 
     ie_network_get_input(ie_network, &input_info, input_name);
-
+    ie_network_input_reshape(ie_network, &input_info, batch_size);
     const char *inputPrecision = "U8";
     ie_input_info_set_precision(&input_info, inputPrecision);
     const char *Layout = "NCHW";
@@ -165,7 +167,7 @@ int main(int argc, char *argv[])
         if (available_infer.empty()) {
             infer_request_t *async_infer_request = pending_infer.front();
 
-            if (0 == infer_request_wait(async_infer_request,-1)) {
+            if (0 == infer_request_wait(async_infer_request, -1)) {
                 const float* detection = (const float *)infer_request_get_blob_data(async_infer_request, output_info.name);
 
                 /* Each detection has image_id that denotes processed image */
@@ -182,8 +184,9 @@ int main(int argc, char *argv[])
                     float xmax = static_cast<int>(detection[i * objectSize + 5] * width);
                     float ymax = static_cast<int>(detection[i * objectSize + 6] * height);
 
-                    std::cout << "[" << i << "," << label << "] element, prob = " << confidence <<
-                        "    (" << xmin << "," << ymin << ")-(" << xmax << "," << ymax << ")" << " batch id : " << image_id << std::endl;
+                    if (confidence > 0.5)
+                        std::cout << "[" << i << "," << label << "] element, prob = " << confidence <<
+                            "    (" << xmin << "," << ymin << ")-(" << xmax << "," << ymax << ")" << " batch id : " << image_id << std::endl;
                 }
             }
 
@@ -194,7 +197,9 @@ int main(int argc, char *argv[])
         infer_request_t *async_infer_request = available_infer.front();
 
         if (!isLastFrame) {
-            frameToBlob(next_frame, async_infer_request, input_info.name);
+            for (int b = 0; b < batch_size; b++) {
+                frameToBlob(next_frame, async_infer_request, input_info.name, b);
+            }
         }
 
         if (!isLastFrame) {
