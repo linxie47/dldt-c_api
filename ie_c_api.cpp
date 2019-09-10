@@ -485,8 +485,12 @@ infer_requests_t *ie_network_create_infer_requests(ie_network_t *network, int nu
                 std::logic_error("missing hetero device configure");
         }
         std::cout << "device = " << device_ << std::endl;
-        network->ie_exec_network = core->loadNetwork(*reinterpret_cast<IEPY::IENetwork *>(network->object), device_,
-                                                     network->core->config, num_requests);
+
+        std::map<std::string, std::string> ie_config(network->core->config);
+        ie_config.erase("IMAGE_FORMAT");
+        ie_config.erase("PRE_PROCESSOR_TYPE");
+        network->ie_exec_network =
+            core->loadNetwork(*reinterpret_cast<IEPY::IENetwork *>(network->object), device_, ie_config, num_requests);
     } catch (const std::exception &e) {
         std::throw_with_nested(std::runtime_error(e.what()));
     }
@@ -621,10 +625,11 @@ void ie_core_set_config(ie_core_t *core, const char *ie_configs, const char *dev
     core->config = String2Map(ie_configs);
     // TODO: Inference Engine asserts if unknown key passed
     std::map<std::string, std::string> ie_config(core->config);
-    ie_config.erase("RESIZE_BY_INFERENCE");
     ie_config.erase("CPU_EXTENSION");
     ie_config.erase("TARGET_FALLBACK");
     ie_config.erase("MULTI_DEVICE_PRIORITIES");
+    ie_config.erase("PRE_PROCESSOR_TYPE");
+    ie_config.erase("IMAGE_FORMAT");
     if (device)
         core_impl->setConfig(ie_config, device);
     else
