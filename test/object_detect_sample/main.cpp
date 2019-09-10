@@ -117,7 +117,10 @@ int main(int argc, char *argv[])
     ie_input_info_t input_info;
 
     ie_network_get_input(ie_network, &input_info, input_name);
-    ie_network_input_reshape(ie_network, &input_info, batch_size);
+
+    if (batch_size > 1)
+        ie_network_input_reshape(ie_network, &input_info, batch_size);
+
     const char *inputPrecision = "U8";
     ie_input_info_set_precision(&input_info, inputPrecision);
     const char *Layout = "NCHW";

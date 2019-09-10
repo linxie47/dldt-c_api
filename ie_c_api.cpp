@@ -346,15 +346,6 @@ void ie_network_destroy(ie_network_t *network) {
     delete network;
 }
 
-void ie_network_set_batch(ie_network_t *network, const size_t size) {
-    if (network == nullptr)
-        return;
-
-    IEPY::IENetwork *network_impl = reinterpret_cast<IEPY::IENetwork *>(network->object);
-    network_impl->setBatch(size);
-    network->batch_size = size;
-}
-
 size_t ie_network_get_batch_size(ie_network_t *network) {
     if (network == nullptr)
         return 0;

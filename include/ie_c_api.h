@@ -130,7 +130,6 @@ int infer_request_set_blob(infer_request_t *infer_request, const char *name, siz
 //// IE NETWORK ////
 ie_network_t *ie_network_create(ie_core_t *core, const char *model, const char *weights);
 void ie_network_destroy(ie_network_t *network);
-void ie_network_set_batch(ie_network_t *network, const size_t size);
 size_t ie_network_get_batch_size(ie_network_t *network);
 // void ie_network_add_output(ie_network_t *network, const char *out_layer, const char *precision);
 // ie_net_layer_t *ie_network_get_layer(ie_network_t *network, const char *layer_name);
