@@ -346,6 +346,13 @@ void ie_network_destroy(ie_network_t *network) {
     delete network;
 }
 
+const char *ie_network_get_name(ie_network_t *network) {
+    if (network == nullptr)
+        return nullptr;
+
+    return network->name;
+}
+
 size_t ie_network_get_batch_size(ie_network_t *network) {
     if (network == nullptr)
         return 0;
