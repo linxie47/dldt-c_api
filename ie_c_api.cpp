@@ -596,12 +596,13 @@ ie_core_t *ie_core_create() {
     }
     core->object = ie_core_ptr;
 
+#if 0
     // list all available devices
     std::cout << "Avail devices: ";
     for (auto device : ie_core_ptr->getAvailableDevices())
         std::cout << device << " ";
     std::cout << std::endl;
-
+#endif
     return core;
 }
 
