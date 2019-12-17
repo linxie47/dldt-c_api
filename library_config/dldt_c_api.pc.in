@@ -1,0 +1,8 @@
+libdir=@CMAKE_INSTALL_FULL_LIBDIR@
+includedir=@DLDT_C_API_INSTALL_INCLUDEDIR@
+
+Name: DLDT_C_API
+Version: @PROJECT_VERSION@
+Description: Intel DLDT Inference Engine C API
+Libs: -L${libdir} -linference_engine_c_api
+Cflags: -I${includedir}
