@@ -18,6 +18,7 @@
 #include "inference_engine.hpp"
 #include "details/ie_exception.hpp"
 #include <ext_list.hpp>
+#include <ie_compound_blob.h>
 
 #include "ie_c_api.h"
 
@@ -1456,6 +1457,25 @@ IEStatusCode ie_blob_make_memory_with_roi(const ie_blob_t *inputBlob, const roi_
         IE::ROI roi_d = {roi->id, roi->posX, roi->posY, roi->sizeX, roi->sizeY};
         _blob->object = IE::make_shared_blob(inputBlob->object, roi_d);
         *blob = _blob.release();
+    } catch (const IE::details::InferenceEngineException& e) {
+       return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
+    } catch (const std::exception& e) {
+        return IEStatusCode::UNEXPECTED;
+    }
+
+    return status;
+}
+
+IEStatusCode ie_blob_make_memory_nv12(ie_blob_t *y, ie_blob_t *uv, ie_blob_t **nv12Blob) {
+    if (y == nullptr || uv == nullptr || nv12Blob == nullptr) {
+        return IEStatusCode::GENERAL_ERROR;
+    }
+
+    IEStatusCode status = IEStatusCode::OK;
+    try {
+        std::unique_ptr<ie_blob_t> _blob(new ie_blob_t);
+        _blob->object = IE::make_shared_blob<IE::NV12Blob>(y->object, uv->object);
+        *nv12Blob = _blob.release();
     } catch (const IE::details::InferenceEngineException& e) {
        return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
     } catch (const std::exception& e) {

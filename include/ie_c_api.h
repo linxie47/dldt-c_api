@@ -751,6 +751,15 @@ INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_make_memory_from_preallocated(const
 INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_make_memory_with_roi(const ie_blob_t *inputBlob, const roi_t *roi, ie_blob_t **blob);
 
 /**
+ * @brief Creates a NV12 blob from two planes Y and UV.
+ * @param y A pointer to the ie_blob_t instance that represents Y plane in NV12 color format
+ * @param uv A pointer to the ie_blob_t instance that represents UV plane in NV12 color format
+ * @param nv12Blob A pointer to the newly created blob.
+ * @return Status code of the operation: OK(0) for success.
+ */
+INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_make_memory_nv12(ie_blob_t *y, ie_blob_t *uv, ie_blob_t **nv12Blob);
+
+/**
  * @brief Gets the total number of elements, which is a product of all the dimensions.
  * @param blob A pointer to the blob.
  * @param size_result The total number of elements.
