@@ -261,7 +261,7 @@ IEStatusCode ie_core_get_versions(const ie_core_t *core, const char *device_name
 
 IEStatusCode ie_core_versions_free(ie_core_versions_t *vers) {
     if (vers) {
-        delete vers->versions;
+        delete []vers->versions;
         vers->versions = NULL;
     }
 
@@ -1153,10 +1153,10 @@ IEStatusCode ie_network_get_output_dims(const ie_network_t *network, const char 
 IEStatusCode ie_network_input_shapes_free(input_shapes_t *inputShapes) {
     if (inputShapes) {
         for (size_t i = 0; i < inputShapes->shape_num; ++i) {
-            delete inputShapes->shapes[i].name;
+            delete []inputShapes->shapes[i].name;
             inputShapes->shapes[i].name = NULL;
         }
-        delete inputShapes->shapes;
+        delete []inputShapes->shapes;
         inputShapes->shapes = NULL;
     }
 
@@ -1165,7 +1165,7 @@ IEStatusCode ie_network_input_shapes_free(input_shapes_t *inputShapes) {
 
 IEStatusCode ie_network_name_free(char **name) {
     if (*name) {
-        delete *name;
+        delete []*name;
         *name = NULL;
     }
 
@@ -1604,4 +1604,13 @@ IEStatusCode ie_blob_get_precision(const ie_blob_t *blob, precision_e *prec_resu
     }
 
     return status;
+}
+
+IEStatusCode ie_blob_free(ie_blob_t **blob) {
+    if (blob) {
+        delete *blob;
+        *blob = NULL;
+    }
+
+    return IEStatusCode::OK;
 }
