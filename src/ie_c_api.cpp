@@ -1606,7 +1606,7 @@ IEStatusCode ie_blob_get_precision(const ie_blob_t *blob, precision_e *prec_resu
     return status;
 }
 
-IEStatusCode ie_blob_free(ie_blob_t **blob) {
+IEStatusCode ie_blob_destroy(ie_blob_t **blob) {
     if (blob) {
         delete *blob;
         *blob = NULL;

@@ -824,8 +824,8 @@ INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_get_precision(const ie_blob_t *blob
 
 /**
  * @brief Releases the memory occupied by the ie_blob_t pointer.
- * @param blob A pointer to the blob to free memory.
+ * @param blob A pointer to the blob pointer to release memory.
  * @return Status code of the operation: OK(0) for success.
  */
-INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_free(ie_blob_t **blob);
+INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_destroy(ie_blob_t **blob);
 #endif  // INFERENCE_ENGINE_IE_BRIDGES_C_INCLUDE_IE_C_API_H_
