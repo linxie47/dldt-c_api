@@ -39,7 +39,7 @@ SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g -ggdb")
 include_directories(${TARGET_NAME} SYSTEM PRIVATE "${SOURCE_DIR}/include")
 
 set(install_headers ${HEADERS})
-set(DLDT_C_API_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_FULL_INCLUDEDIR})
+set(DLDT_C_API_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_FULL_INCLUDEDIR}/dldt)
 
 configure_file("${SOURCE_DIR}/library_config/dldt_c_api.pc.in"
     "${CMAKE_BINARY_DIR}/dldt_c_api.pc" @ONLY)
