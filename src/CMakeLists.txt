@@ -46,13 +46,10 @@ configure_file("${SOURCE_DIR}/library_config/dldt_c_api.pc.in"
 
 install(FILES ${install_headers} DESTINATION ${DLDT_C_API_INSTALL_INCLUDEDIR})
 install(FILES "${CMAKE_BINARY_DIR}/dldt_c_api.pc" DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}/pkgconfig")
-# install(TARGETS ${TARGET_NAME}
-#       LIBRARY DESTINATION lib)
-install(FILES "${CMAKE_BINARY_DIR}/ie_cpu_extension/libcpu_extension.so" DESTINATION "${CMAKE_INSTALL_FULL_LIBDIR}")
 install(TARGETS ${TARGET_NAME} DESTINATION ${CMAKE_INSTALL_FULL_LIBDIR})
 
 set_target_properties("${TARGET_NAME}"
     PROPERTIES
     "CMAKE_CXX_FLAGS" "${CMAKE_CXX_FLAGS} -fPIE" COMPILE_PDB_NAME ${TARGET_NAME})
 
-target_link_libraries("${TARGET_NAME}" IE::ie_cpu_extension ${InferenceEngine_LIBRARIES} dl)
+target_link_libraries("${TARGET_NAME}" ${InferenceEngine_LIBRARIES} dl)

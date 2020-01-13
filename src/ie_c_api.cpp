@@ -17,7 +17,6 @@
 #include <ie_extension.h>
 #include "inference_engine.hpp"
 #include "details/ie_exception.hpp"
-#include <ext_list.hpp>
 #include <ie_compound_blob.h>
 
 #include "ie_c_api.h"
@@ -268,6 +267,30 @@ IEStatusCode ie_core_versions_free(ie_core_versions_t *vers) {
     return IEStatusCode::OK;
 }
 
+IEStatusCode ie_core_read_network(ie_core_t *core, const char *xml, const char *weights_file, ie_network_t **network) {
+    if (core == nullptr || xml == nullptr || network == nullptr) {
+        return IEStatusCode::GENERAL_ERROR;
+    }
+
+    IEStatusCode status = IEStatusCode::OK;
+
+    try {
+        std::unique_ptr<ie_network_t> network_result(new ie_network_t);
+        std::string bin = "";
+        if (weights_file) {
+            bin = weights_file;
+        }
+        network_result->object = core->object.ReadNetwork(xml, bin);
+        *network = network_result.release();
+    } catch (const IE::details::InferenceEngineException& e) {
+        return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
+    } catch (const std::exception& e) {
+        return IEStatusCode::UNEXPECTED;
+    }
+
+    return status;
+}
+
 IEStatusCode ie_core_load_network(ie_core_t *core, const ie_network_t *network, const char *device_name, \
         const ie_config_t *config, ie_executable_network_t **exe_network) {
     IEStatusCode status = IEStatusCode::OK;
@@ -379,23 +402,15 @@ IEStatusCode ie_core_unregister_plugin(ie_core_t *core, const char *device_name)
 IEStatusCode ie_core_add_extension(ie_core_t *core, const char *extension_path, const char *device_name) {
     IEStatusCode status = IEStatusCode::OK;
 
-    if (core == nullptr || device_name == nullptr) {
+    if (core == nullptr || extension_path == nullptr || device_name == nullptr) {
         status = IEStatusCode::GENERAL_ERROR;
         return status;
     }
 
     try {
-        if (extension_path == nullptr && !strcmp(device_name, "CPU")) {
-            core->object.AddExtension(std::make_shared<IE::Extensions::Cpu::CpuExtensions>(), "CPU");
-        } else {
-            std::string ext_path;
-            if (extension_path)
-                ext_path = extension_path;
-            auto extension_ptr = InferenceEngine::make_so_pointer<InferenceEngine::IExtension>(extension_path);
-            auto extension = std::dynamic_pointer_cast<InferenceEngine::IExtension>(extension_ptr);
-            core->object.AddExtension(extension, device_name);
-        }
-        
+        auto extension_ptr = InferenceEngine::make_so_pointer<InferenceEngine::IExtension>(extension_path);
+        auto extension = std::dynamic_pointer_cast<InferenceEngine::IExtension>(extension_ptr);
+        core->object.AddExtension(extension, device_name);
     } catch (const IE::details::InferenceEngineException& e) {
         return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
     } catch (const std::exception& e) {
@@ -528,29 +543,6 @@ IEStatusCode ie_exec_network_get_config(const ie_executable_network_t *ie_exec_n
         InferenceEngine::Parameter parameter = ie_exec_network->object.GetConfig(metric_config);
         parameter2IEparam(parameter, param_result);
     } catch (const IE::details::InferenceEngineException& e) {
-        return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
-    } catch (const std::exception& e) {
-        return IEStatusCode::UNEXPECTED;
-    }
-
-    return status;
-}
-
-IEStatusCode ie_network_read(const char *xml, const char *weights_file, ie_network_t **network) {
-    if (xml == nullptr || weights_file == nullptr || network == nullptr) {
-        return IEStatusCode::GENERAL_ERROR;
-    }
-
-    IEStatusCode status = IEStatusCode::OK;
-
-    try {
-        IE::CNNNetReader net_reader;
-        net_reader.ReadNetwork(xml);
-        net_reader.ReadWeights(weights_file);
-        std::unique_ptr<ie_network_t> network_result(new ie_network_t);
-        network_result->object = net_reader.getNetwork();
-        *network = network_result.release();
-   } catch (const IE::details::InferenceEngineException& e) {
         return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
     } catch (const std::exception& e) {
         return IEStatusCode::UNEXPECTED;

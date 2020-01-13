@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 //
 
-#ifndef INFERENCE_ENGINE_IE_BRIDGES_C_INCLUDE_IE_C_API_H_
-#define INFERENCE_ENGINE_IE_BRIDGES_C_INCLUDE_IE_C_API_H_
+#ifndef IE_C_API_H
+#define IE_C_API_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -305,6 +305,17 @@ INFERENCE_ENGINE_C_API(IEStatusCode) ie_core_get_versions(const ie_core_t *core,
 INFERENCE_ENGINE_C_API(IEStatusCode) ie_core_versions_free(ie_core_versions_t *vers);
 
 /**
+ * @brief Reads the model from the .xml and .bin files of the IR. Use the ie_network_free() method to free memory.
+ * @param core A pointer to ie_core_t instance.
+ * @param xml .xml file's path of the IR.
+ * @param weights_file .bin file's path of the IR, if path is empty, will try to read bin file with the same name as xml and
+ * if bin file with the same name was not found, will load IR without weights.
+ * @param network A pointer to the newly created network.
+ * @return Status code of the operation: OK(0) for success.
+ */
+INFERENCE_ENGINE_C_API(IEStatusCode) ie_core_read_network(ie_core_t *core, const char *xml, const char *weights_file, ie_network_t **network);
+
+/**
  * @brief Creates an executable network from a network object. Users can create as many networks as they need and use
  * them simultaneously (up to the limitation of the hardware resources). Use the ie_exec_network_free() method to free memory.
  * @param core A pointer to ie_core_t instance.
@@ -504,15 +515,6 @@ INFERENCE_ENGINE_C_API(IEStatusCode) ie_infer_request_set_batch(ie_infer_request
 
 
 // Network
-/**
- * @brief Reads the model from the .xml and .bin files of the IR. Use the ie_network_free() method to free memory.
- * @param xml .xml file's path of the IR.
- * @param weights_file .bin file's path of the IR.
- * @param network A pointer to the newly created network.
- * @return Status code of the operation: OK(0) for success.
- */
-INFERENCE_ENGINE_C_API(IEStatusCode) ie_network_read(const char *xml, const char *weights_file, ie_network_t **network);
-
 /**
  * @brief Gets network's name.
  * @param network A pointer to the instance of the ie_network_t.
@@ -828,4 +830,5 @@ INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_get_precision(const ie_blob_t *blob
  * @return Status code of the operation: OK(0) for success.
  */
 INFERENCE_ENGINE_C_API(IEStatusCode) ie_blob_destroy(ie_blob_t **blob);
-#endif  // INFERENCE_ENGINE_IE_BRIDGES_C_INCLUDE_IE_C_API_H_
+
+#endif  // IE_C_API_H
