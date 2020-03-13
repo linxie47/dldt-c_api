@@ -877,14 +877,25 @@ INFERENCE_ENGINE_C_API(IE_NODISCARD IEStatusCode) ie_blob_make_memory_from_preal
 INFERENCE_ENGINE_C_API(IE_NODISCARD IEStatusCode) ie_blob_make_memory_with_roi(const ie_blob_t *inputBlob, const roi_t *roi, ie_blob_t **blob);
 
 /**
-* @brief Creates a NV12 blob from two planes Y and UV.
-* @ingroup Blob
-* @param y A pointer to the ie_blob_t instance that represents Y plane in NV12 color format.
-* @param uv A pointer to the ie_blob_t instance that represents UV plane in NV12 color format.
-* @param nv12Blob A pointer to the newly created blob.
-* @return Status code of the operation: OK(0) for success.
+ * @brief Creates a NV12 blob from two planes Y and UV.
+ * @ingroup Blob
+ * @param y A pointer to the ie_blob_t instance that represents Y plane in NV12 color format.
+ * @param uv A pointer to the ie_blob_t instance that represents UV plane in NV12 color format.
+ * @param nv12Blob A pointer to the newly created blob.
+ * @return Status code of the operation: OK(0) for success.
 */
 INFERENCE_ENGINE_C_API(IE_NODISCARD IEStatusCode) ie_blob_make_memory_nv12(const ie_blob_t *y, const ie_blob_t *uv, ie_blob_t **nv12Blob);
+
+/**
+ * @brief Creates I420 blob from three planes Y, U and V.
+ * @ingroup Blob
+ * @param y A pointer to the ie_blob_t instance that represents Y plane in I420 color format.
+ * @param u A pointer to the ie_blob_t instance that represents U plane in I420 color format.
+ * @param v A pointer to the ie_blob_t instance that represents V plane in I420 color format.
+ * @param i420Blob A pointer to the newly created blob.
+ * @return Status code of the operation: OK(0) for success.
+*/
+INFERENCE_ENGINE_C_API(IE_NODISCARD IEStatusCode) ie_blob_make_memory_i420(const ie_blob_t *y, const ie_blob_t *u, const ie_blob_t *v, ie_blob_t **i420Blob);
 
 /**
  * @brief Gets the total number of elements, which is a product of all the dimensions.

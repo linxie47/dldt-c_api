@@ -1480,7 +1480,25 @@ IEStatusCode ie_blob_make_memory_nv12(const ie_blob_t *y, const ie_blob_t *uv, i
         _blob->object = IE::make_shared_blob<IE::NV12Blob>(y->object, uv->object);
         *nv12Blob = _blob.release();
     } catch (const IE::details::InferenceEngineException& e) {
-        return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
+       return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
+    } catch (...) {
+        return IEStatusCode::UNEXPECTED;
+    }
+
+    return IEStatusCode::OK;
+}
+
+IEStatusCode ie_blob_make_memory_i420(const ie_blob_t *y, const ie_blob_t *u, const ie_blob_t *v, ie_blob_t **i420Blob) {
+    if (y == nullptr || u == nullptr || v == nullptr || i420Blob == nullptr) {
+        return IEStatusCode::GENERAL_ERROR;
+    }
+
+    try {
+        std::unique_ptr<ie_blob_t> _blob(new ie_blob_t);
+        _blob->object = IE::make_shared_blob<IE::I420Blob>(y->object, u->object, v->object);
+        *i420Blob = _blob.release();
+    } catch (const IE::details::InferenceEngineException& e) {
+       return e.hasStatus() ? status_map[e.getStatus()] : IEStatusCode::UNEXPECTED;
     } catch (...) {
         return IEStatusCode::UNEXPECTED;
     }
