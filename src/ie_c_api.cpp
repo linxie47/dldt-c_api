@@ -18,7 +18,7 @@
 #include "inference_engine.hpp"
 #include "details/ie_exception.hpp"
 #include "ie_compound_blob.h"
-#include "c_api/ie_c_api.h"
+#include "ie_c_api.h"
 
 namespace IE = InferenceEngine;
 
@@ -87,7 +87,6 @@ std::map<IE::Precision, precision_e> precision_map = {{IE::Precision::UNSPECIFIE
                                                         {IE::Precision::U16, precision_e::U16},
                                                         {IE::Precision::I32, precision_e::I32},
                                                         {IE::Precision::I64, precision_e::I64},
-                                                        {IE::Precision::U64, precision_e::U64},
                                                         {IE::Precision::BIN, precision_e::BIN},
                                                         {IE::Precision::CUSTOM, precision_e::CUSTOM}};
 
@@ -1363,8 +1362,6 @@ IEStatusCode ie_blob_make_memory(const tensor_desc_t *tensorDesc, ie_blob_t **bl
             _blob->object = IE::make_shared_blob<int32_t>(tensor);
         } else if (prec == IE::Precision::I64) {
             _blob->object = IE::make_shared_blob<int64_t>(tensor);
-        } else if (prec == IE::Precision::U64) {
-            _blob->object = IE::make_shared_blob<uint64_t>(tensor);
         } else if  (prec == IE::Precision::FP32) {
             _blob->object = IE::make_shared_blob<float>(tensor);
         } else {
@@ -1429,9 +1426,6 @@ IEStatusCode ie_blob_make_memory_from_preallocated(const tensor_desc_t *tensorDe
             _blob->object = IE::make_shared_blob(tensor, p, size);
         } else if (prec == IE::Precision::I64) {
             int64_t *p = reinterpret_cast<int64_t *>(ptr);
-            _blob->object = IE::make_shared_blob(tensor, p, size);
-        } else if (prec == IE::Precision::U64) {
-            uint64_t *p = reinterpret_cast<uint64_t *>(ptr);
             _blob->object = IE::make_shared_blob(tensor, p, size);
         } else if  (prec == IE::Precision::FP32) {
             float *p = reinterpret_cast<float *>(ptr);
