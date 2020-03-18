@@ -202,6 +202,7 @@ typedef enum {
     RGBX,        ///< RGBX color format with X ignored during inference
     BGRX,        ///< BGRX color format with X ignored during inference
     NV12,        ///< NV12 color format represented as compound Y+UV blob
+    I420,        ///< I420 color format represented as compound Y+U+V blob
 }colorformat_e;
 
 /**
