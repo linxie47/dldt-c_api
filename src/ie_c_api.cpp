@@ -113,6 +113,7 @@ std::map<IE::ColorFormat, colorformat_e> colorformat_map = {{IE::ColorFormat::RA
                                                             {IE::ColorFormat::BGR, colorformat_e::BGR},
                                                             {IE::ColorFormat::BGRX, colorformat_e::BGRX},
                                                             {IE::ColorFormat::RGBX, colorformat_e::RGBX},
+                                                            {IE::ColorFormat::I420, colorformat_e::I420},
                                                             {IE::ColorFormat::NV12, colorformat_e::NV12}};
 
 /**
