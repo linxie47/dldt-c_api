@@ -39,7 +39,8 @@
         #define IE_NODISCARD
     #else
         #define INFERENCE_ENGINE_C_API(...) INFERENCE_ENGINE_C_API_EXTERN __attribute__((visibility("default"))) __VA_ARGS__
-        #define IE_NODISCARD __attribute__((warn_unused_result))
+        #define IE_NODISCARD
+        //#define IE_NODISCARD __attribute__((warn_unused_result))
     #endif
 #endif
 
